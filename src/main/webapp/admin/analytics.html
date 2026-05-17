@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics — Admin</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="dashboard-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header" style="cursor:pointer;" onclick="window.location.href='../index.html'" title="Switch Portal"><span class="logo-icon">🛡️</span><h2>Admin Panel</h2></div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Overview</div>
+            <a href="admin-dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+            <div class="nav-section-title">Management</div>
+            <a href="manage-users.html" class="nav-item"><span class="nav-icon">👥</span> Manage Users</a>
+            <a href="manage-vehicles.html" class="nav-item"><span class="nav-icon">🚗</span> Manage Vehicles</a>
+            <a href="reports.html" class="nav-item"><span class="nav-icon">📋</span> Incident Reports</a>
+            <a href="blacklist-vehicles.html" class="nav-item"><span class="nav-icon">⛔</span> Blacklist</a>
+            <a href="analytics.html" class="nav-item active"><span class="nav-icon">📈</span> Analytics</a>
+            <div class="nav-section-title">Account</div>
+            <a href="#" class="nav-item" onclick="logoutAdmin()"><span class="nav-icon">🚪</span> Logout</a>
+        </nav>
+    </aside>
+    <div class="main-content">
+        <header class="top-header">
+            <div class="header-left"><button class="menu-toggle" onclick="toggleSidebar()">☰</button><h1 class="page-title">Analytics</h1></div>
+            <div class="header-right"><button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button></div>
+        </header>
+        <div class="page-content">
+            <!-- Summary Cards -->
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-info"><h3>Total Users</h3><div class="stat-value" id="sUsers">0</div></div><div class="stat-icon purple">👥</div></div>
+                <div class="stat-card"><div class="stat-info"><h3>Total Reports</h3><div class="stat-value" id="sReports">0</div></div><div class="stat-icon blue">📋</div></div>
+                <div class="stat-card"><div class="stat-info"><h3>Total Vehicles</h3><div class="stat-value" id="sVehicles">0</div></div><div class="stat-icon cyan">🚗</div></div>
+                <div class="stat-card"><div class="stat-info"><h3>Blacklisted</h3><div class="stat-value" id="sBL">0</div></div><div class="stat-icon red">⛔</div></div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-card animate-in">
+                    <h3>Reports by Status</h3>
+                    <canvas id="statusChart"></canvas>
+                </div>
+                <div class="chart-card animate-in" style="animation-delay:0.1s">
+                    <h3>Report Reasons Breakdown</h3>
+                    <canvas id="reasonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+    (async () => {
+        await requireAdmin();
+        showLoader();
+
+        try {
+            const stats = await apiGet('/api/admin/stats');
+            document.getElementById('sUsers').textContent = stats.totalUsers || 0;
+            document.getElementById('sReports').textContent = stats.totalReports || 0;
+            document.getElementById('sVehicles').textContent = stats.totalVehicles || 0;
+            document.getElementById('sBL').textContent = stats.blacklistedVehicles || 0;
+
+            // Status Doughnut Chart
+            new Chart(document.getElementById('statusChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pending', 'In Progress', 'Resolved', 'Rejected'],
+                    datasets: [{
+                        data: [stats.pendingReports||0, stats.inProgressReports||0, stats.resolvedReports||0, stats.rejectedReports||0],
+                        backgroundColor: ['#eab308', '#3b82f6', '#22c55e', '#ef4444'],
+                        borderWidth: 0,
+                        spacing: 4,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    cutout: '65%',
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'Inter' }, padding: 20 } } }
+                }
+            });
+        } catch(e) {}
+
+        // Reason breakdown from reports
+        try {
+            const reports = await apiGet('/api/report/all');
+            const reasons = {};
+            reports.forEach(r => { reasons[r.reason] = (reasons[r.reason]||0) + 1; });
+
+            new Chart(document.getElementById('reasonChart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(reasons),
+                    datasets: [{
+                        label: 'Count',
+                        data: Object.values(reasons),
+                        backgroundColor: ['#6366f1', '#06b6d4', '#22c55e', '#eab308', '#ef4444', '#a855f7', '#ec4899'],
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Inter' } } }
+                    }
+                }
+            });
+        } catch(e) {}
+
+        hideLoader();
+    })();
+</script>
+</body>
+</html>

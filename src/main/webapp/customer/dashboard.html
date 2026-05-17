@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Vehicle Verification System</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header" style="cursor:pointer;" onclick="window.location.href='../index.html'" title="Switch Portal">
+            <span class="logo-icon">🚗</span>
+            <h2>VehicleVerify</h2>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main</div>
+            <a href="dashboard.html" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="my-vehicles.html" class="nav-item"><span class="nav-icon">🚘</span> My Vehicles</a>
+            <a href="search-vehicle.html" class="nav-item"><span class="nav-icon">🔍</span> Search Vehicle</a>
+            <a href="report-incident.html" class="nav-item"><span class="nav-icon">🚨</span> Report Incident</a>
+            <a href="complaint-history.html" class="nav-item"><span class="nav-icon">📋</span> Complaint History</a>
+            <div class="nav-section-title">Account</div>
+            <a href="profile.html" class="nav-item"><span class="nav-icon">👤</span> Profile</a>
+            <a href="#" class="nav-item" onclick="logoutUser()"><span class="nav-icon">🚪</span> Logout</a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                <h1 class="page-title">Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <div class="notification-wrapper" style="position:relative; margin-right: var(--space-4);">
+                    <button class="icon-btn" onclick="toggleNotifications()" id="notifBtn">
+                        <span style="font-size: 1.5rem;">🔔</span>
+                        <span class="notif-badge" id="notifBadge" style="display:none; position:absolute; top:-5px; right:-5px; background:var(--danger-500); color:white; font-size:0.7rem; padding:2px 6px; border-radius:10px; border:2px solid var(--surface);">0</span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown" style="display:none; position:absolute; top:50px; right:0; width:320px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-xl); z-index:1000; overflow:hidden;">
+                        <div style="padding:var(--space-4); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                            <h4 style="margin:0;">Notifications</h4>
+                            <button onclick="markAllRead()" style="background:none; border:none; color:var(--primary-400); font-size:var(--font-xs); cursor:pointer;">Mark all read</button>
+                        </div>
+                        <div id="notifList" style="max-height:360px; overflow-y:auto;">
+                            <div style="padding:var(--space-8); text-align:center; color:var(--text-muted);">No new messages</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+                <div class="user-avatar" id="userAvatar">?</div>
+            </div>
+        </header>
+
+        <div class="page-content">
+            <!-- Welcome Banner -->
+            <div id="blockedMessageContainer"></div>
+            <div class="card" style="margin-bottom: var(--space-8); background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(6,182,212,0.1)); border: 1px solid rgba(99,102,241,0.2);">
+                <h2 style="font-size: var(--font-2xl); font-weight: 800;">Welcome back, <span id="userName">User</span>! 👋</h2>
+                <p style="color: var(--text-secondary); margin-top: var(--space-2);">Here's a quick overview of your activity on the platform.</p>
+            </div>
+
+            <!-- Stat Cards -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card animate-in">
+                    <div class="stat-info"><h3>Total Reports</h3><div class="stat-value" id="totalReports">0</div></div>
+                    <div class="stat-icon purple">📝</div>
+                </div>
+                <div class="stat-card animate-in" style="animation-delay: 0.1s">
+                    <div class="stat-info"><h3>Pending</h3><div class="stat-value" id="pendingReports">0</div></div>
+                    <div class="stat-icon yellow">⏳</div>
+                </div>
+                <div class="stat-card animate-in" style="animation-delay: 0.2s">
+                    <div class="stat-info"><h3>Resolved</h3><div class="stat-value" id="resolvedReports">0</div></div>
+                    <div class="stat-icon green">✅</div>
+                </div>
+                <div class="stat-card animate-in" style="animation-delay: 0.3s">
+                    <div class="stat-info"><h3>Rejected</h3><div class="stat-value" id="rejectedReports">0</div></div>
+                    <div class="stat-icon red">❌</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="section-header"><h2 class="section-title">Quick Actions</h2></div>
+            <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-8);">
+                <a href="search-vehicle.html" class="btn btn-primary btn-lg">🔍 Search Vehicle</a>
+                <a href="report-incident.html" class="btn btn-danger btn-lg">🚨 Report Incident</a>
+                <a href="complaint-history.html" class="btn btn-secondary btn-lg">📋 View History</a>
+            </div>
+
+            <!-- Recent Reports -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Recent Reports</h3>
+                    <a href="complaint-history.html" class="btn btn-secondary btn-sm">View All</a>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Report ID</th><th>Vehicle No</th><th>Reason</th><th>Status</th><th>Date</th></tr></thead>
+                        <tbody id="recentReportsBody"><tr><td colspan="5" class="text-center" style="padding: var(--space-8); color: var(--text-muted);">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/ui.js?v=1"></script>
+<script src="../js/api.js?v=1"></script>
+<script src="../js/auth.js?v=1"></script>
+<script>
+    (async () => {
+        await requireAuth();
+        try {
+            const profile = await apiGet('/api/user/profile');
+            document.getElementById('userName').textContent = profile.name || 'User';
+            document.getElementById('userAvatar').textContent = getInitials(profile.name);
+            
+            // Account Frozen Check
+            if (profile.isFrozen) {
+                showFrozenModal(profile.fineAmount);
+            }
+            
+            loadNotifications();
+            
+            // Check for blacklisted vehicles
+            const vehicles = await apiGet('/api/vehicle/my-vehicles');
+            const blacklistedVehicles = vehicles.filter(v => v.blacklistStatus);
+            
+            if (blacklistedVehicles.length > 0) {
+                const container = document.getElementById('blockedMessageContainer');
+                let messageHtml = `
+                    <div class="card" style="margin-bottom: var(--space-8); border: 2px solid var(--danger-500); background: rgba(239, 68, 68, 0.1);">
+                        <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4);">
+                            <span style="font-size: 2rem;">🚫</span>
+                            <h2 style="color: var(--danger-400); margin: 0;">Notice: Your Account/Vehicle is Blocked</h2>
+                        </div>
+                        <p style="margin-bottom: var(--space-4);">The following vehicle(s) registered to you have been blacklisted due to reported incidents:</p>
+                        <div style="display: grid; gap: var(--space-4);">`;
+                
+                for (const v of blacklistedVehicles) {
+                    const reports = await apiGet(`/api/report/by-vehicle?vehicleNo=${v.vehicleNo}`);
+                    messageHtml += `
+                        <div style="padding: var(--space-4); background: rgba(0,0,0,0.2); border-radius: var(--radius-md); border-left: 4px solid var(--danger-500);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+                                <strong>Vehicle: ${v.vehicleNo}</strong>
+                                <span class="badge badge-blacklisted">BLACKLISTED</span>
+                            </div>
+                            <div style="font-size: var(--font-sm); color: var(--text-secondary);">
+                                <strong>Reason(s) for block:</strong>
+                                <ul style="margin-top: var(--space-2); padding-left: var(--space-6);">
+                                    ${reports.length > 0 ? reports.map(r => `<li>${r.reason}: ${r.description}</li>`).join('') : '<li>No specific incident reports found.</li>'}
+                                </ul>
+                            </div>
+                        </div>`;
+                }
+                
+                messageHtml += `</div></div>`;
+                container.innerHTML = messageHtml;
+            }
+        } catch(e) { console.error('Error checking blacklist:', e); }
+
+        try {
+            const reports = await apiGet('/api/report/history');
+            const total = reports.length;
+            const pending = reports.filter(r => r.status === 'Pending').length;
+            const resolved = reports.filter(r => r.status === 'Resolved').length;
+            const rejected = reports.filter(r => r.status === 'Rejected').length;
+            
+            document.getElementById('totalReports').textContent = total;
+            document.getElementById('pendingReports').textContent = pending;
+            document.getElementById('resolvedReports').textContent = resolved;
+            document.getElementById('rejectedReports').textContent = rejected;
+
+            const tbody = document.getElementById('recentReportsBody');
+            if (reports.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="padding:var(--space-8);color:var(--text-muted);">No reports yet. <a href="report-incident.html">File your first report</a></td></tr>';
+            } else {
+                tbody.innerHTML = reports.slice(0, 5).map(r => `
+                    <tr>
+                        <td style="font-family: monospace; font-size: var(--font-xs);">${r.reportId.length > 8 ? r.reportId.substring(0,8) + '...' : r.reportId}</td>
+                        <td><strong>${r.vehicleNo}</strong></td>
+                        <td>${r.reason}</td>
+                        <td>${getStatusBadge(r.status)}</td>
+                        <td>${formatDate(r.createdAt)}</td>
+                    </tr>`).join('');
+            }
+        } catch(e) {
+            document.getElementById('recentReportsBody').innerHTML = '<tr><td colspan="5" class="text-center" style="color:var(--text-muted);">Could not load reports.</td></tr>';
+        }
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Registration — Vehicle Verification System</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <span class="auth-logo-icon" onclick="window.location.href='../index.html'">🛡️</span>
+                <h1>New Admin</h1>
+                <p>Register an administrative account</p>
+            </div>
+
+            <div id="authError" class="auth-error"></div>
+
+            <form id="registerForm" onsubmit="return handleAdminRegister(event)" autocomplete="off">
+                <!-- Hidden inputs to trick the browser's autofill -->
+                <input type="text" name="admin_name_fake" style="display:none;" />
+                <input type="email" name="admin_email_fake" style="display:none;" />
+                <input type="password" name="admin_pass_fake" style="display:none;" />
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="name" class="form-control" placeholder="Admin Name" required>
+                        <span class="input-icon">👤</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Admin Email</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="email" class="form-control" placeholder="admin@system.com" required>
+                        <span class="input-icon">📧</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Security Key</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" class="form-control" placeholder="Min. 6 characters" required oninput="updatePasswordStrengthBar(this.value)">
+                        <span class="input-icon">🔒</span>
+                    </div>
+                    <div class="password-strength" style="height: 4px; background: rgba(255,255,255,0.05); margin-top: 8px; border-radius: 2px; overflow: hidden;">
+                        <div class="password-strength-bar" style="height: 100%; width: 0%; transition: all 0.3s ease;"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Confirm Security Key</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="confirmPassword" class="form-control" placeholder="Repeat key" required>
+                        <span class="input-icon">🛡️</span>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="regBtn" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); box-shadow: 0 10px 20px -5px rgba(16,185,129,0.3);">Create Admin Profile</button>
+            </form>
+
+            <div class="auth-footer">
+                Already registered? <a href="admin-login.html">Sign In</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/ui.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        async function handleAdminRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            const errEl = document.getElementById('authError');
+            errEl.classList.remove('visible');
+
+            if (password !== confirm) {
+                errEl.textContent = 'Keys do not match.';
+                errEl.classList.add('visible');
+                return false;
+            }
+
+            const btn = document.getElementById('regBtn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            try {
+                await registerAdmin(name, email, password);
+                showToast('Admin profile created successfully.', 'success');
+                setTimeout(() => { window.location.href = 'admin-login.html'; }, 2000);
+            } catch (error) {
+                errEl.textContent = getAuthErrorMessage(error);
+                errEl.classList.add('visible');
+                btn.disabled = false;
+                btn.textContent = 'Create Admin Profile';
+            }
+            return false;
+        }
+
+        function updatePasswordStrengthBar(pass) {
+            const bar = document.querySelector('.password-strength-bar');
+            let strength = 0;
+            if (pass.length > 5) strength += 25;
+            if (pass.match(/[A-Z]/)) strength += 25;
+            if (pass.match(/[0-9]/)) strength += 25;
+            if (pass.match(/[^A-Za-z0-9]/)) strength += 25;
+            
+            bar.style.width = strength + '%';
+            if (strength < 50) bar.style.backgroundColor = '#ef4444';
+            else if (strength < 75) bar.style.backgroundColor = '#eab308';
+            else bar.style.backgroundColor = '#10b981';
+        }
+        // Aggressively clear fields on load to prevent browser autofill
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const n = document.getElementById('name');
+                const e = document.getElementById('email');
+                const p = document.getElementById('password');
+                const cp = document.getElementById('confirmPassword');
+                if(n) n.value = '';
+                if(e) e.value = '';
+                if(p) p.value = '';
+                if(cp) cp.value = '';
+            }, 50);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Reports — Admin</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="dashboard-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header" style="cursor:pointer;" onclick="window.location.href='../index.html'" title="Switch Portal"><span class="logo-icon">🛡️</span><h2>Admin Panel</h2></div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Overview</div>
+            <a href="admin-dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+            <div class="nav-section-title">Management</div>
+            <a href="manage-users.html" class="nav-item"><span class="nav-icon">👥</span> Manage Users</a>
+            <a href="manage-vehicles.html" class="nav-item"><span class="nav-icon">🚗</span> Manage Vehicles</a>
+            <a href="reports.html" class="nav-item active"><span class="nav-icon">📋</span> Incident Reports</a>
+            <a href="blacklist-vehicles.html" class="nav-item"><span class="nav-icon">⛔</span> Blacklist</a>
+            <a href="analytics.html" class="nav-item"><span class="nav-icon">📈</span> Analytics</a>
+            <div class="nav-section-title">Account</div>
+            <a href="#" class="nav-item" onclick="logoutAdmin()"><span class="nav-icon">🚪</span> Logout</a>
+        </nav>
+    </aside>
+    <div class="main-content">
+        <header class="top-header">
+            <div class="header-left"><button class="menu-toggle" onclick="toggleSidebar()">☰</button><h1 class="page-title">Incident Reports</h1></div>
+            <div class="header-right"><button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button></div>
+        </header>
+        <div class="page-content">
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="filterR('all',this)">All</button>
+                <button class="filter-btn" onclick="filterR('Pending',this)">Pending</button>
+                <button class="filter-btn" onclick="filterR('In Progress',this)">In Progress</button>
+                <button class="filter-btn" onclick="filterR('Resolved',this)">Resolved</button>
+                <button class="filter-btn" onclick="filterR('Rejected',this)">Rejected</button>
+            </div>
+            <div class="card">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>ID</th><th>Vehicle</th><th>Reporter</th><th>Reason</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+                        <tbody id="reportsBody"><tr><td colspan="7" class="text-center" style="padding:var(--space-8);color:var(--text-muted);">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-backdrop" id="detailModal">
+    <div class="modal">
+        <div class="modal-header"><h3 class="modal-title">Report Details</h3><button class="modal-close" onclick="closeModal('detailModal')">&times;</button></div>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+    let allReports = [];
+    (async () => {
+        await requireAdmin();
+        showLoader();
+        try { allReports = await apiGet('/api/report/all'); renderReports(allReports); } catch(e) {}
+        hideLoader();
+    })();
+
+    function renderReports(reports) {
+        const tbody = document.getElementById('reportsBody');
+        if (!reports.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--text-muted);">No reports.</td></tr>'; return; }
+        tbody.innerHTML = reports.map(r => `<tr>
+            <td style="font-family:monospace;font-size:var(--font-xs);cursor:pointer;" onclick='showDetail(${JSON.stringify(r)})'>${r.reportId.substring(0,8)}...</td>
+            <td><strong>${r.vehicleNo}</strong></td><td style="font-size:var(--font-xs);">${r.reportedBy.substring(0,10)}...</td>
+            <td>${r.reason}</td><td>${getStatusBadge(r.status)}</td><td>${formatDate(r.createdAt)}</td>
+            <td><select class="form-control" style="padding:var(--space-2);font-size:var(--font-xs);min-height:auto;" onchange="updateStatus('${r.reportId}',this.value)">
+                <option value="Pending" ${r.status==='Pending'?'selected':''}>Pending</option>
+                <option value="In Progress" ${r.status==='In Progress'?'selected':''}>In Progress</option>
+                <option value="Resolved" ${r.status==='Resolved'?'selected':''}>Resolved</option>
+                <option value="Rejected" ${r.status==='Rejected'?'selected':''}>Rejected</option>
+            </select></td></tr>`).join('');
+    }
+
+    function filterR(status, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderReports(status === 'all' ? allReports : allReports.filter(r => r.status === status));
+    }
+
+    async function updateStatus(reportId, status) {
+        try {
+            await apiPut('/api/report/status', { reportId, status });
+            const r = allReports.find(x => x.reportId === reportId);
+            if (r) r.status = status;
+            showToast('Status updated to ' + status, 'success');
+        } catch(e) { showToast(e.message, 'error'); }
+    }
+
+    function showDetail(r) {
+        document.getElementById('modalBody').innerHTML = `
+            <div style="display:grid;gap:var(--space-4);">
+                <div><strong>Report ID:</strong> <code>${r.reportId}</code></div>
+                <div><strong>Vehicle:</strong> ${r.vehicleNo}</div>
+                <div><strong>Reporter:</strong> ${r.reportedBy}</div>
+                <div><strong>Reason:</strong> ${r.reason}</div>
+                <div><strong>Status:</strong> ${getStatusBadge(r.status)}</div>
+                <div><strong>Date:</strong> ${formatDate(r.createdAt)}</div>
+                <div><strong>Description:</strong><p style="color:var(--text-secondary);margin-top:var(--space-2);">${r.description}</p></div>
+            </div>`;
+        openModal('detailModal');
+    }
+</script>
+</body>
+</html>

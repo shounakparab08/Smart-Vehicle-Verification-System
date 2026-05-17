@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Vehicles — Admin</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="dashboard-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header" style="cursor:pointer;" onclick="window.location.href='../index.html'" title="Switch Portal"><span class="logo-icon">🛡️</span><h2>Admin Panel</h2></div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Overview</div>
+            <a href="admin-dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+            <div class="nav-section-title">Management</div>
+            <a href="manage-users.html" class="nav-item"><span class="nav-icon">👥</span> Manage Users</a>
+            <a href="manage-vehicles.html" class="nav-item active"><span class="nav-icon">🚗</span> Manage Vehicles</a>
+            <a href="reports.html" class="nav-item"><span class="nav-icon">📋</span> Incident Reports</a>
+            <a href="blacklist-vehicles.html" class="nav-item"><span class="nav-icon">⛔</span> Blacklist</a>
+            <a href="analytics.html" class="nav-item"><span class="nav-icon">📈</span> Analytics</a>
+            <div class="nav-section-title">Account</div>
+            <a href="#" class="nav-item" onclick="logoutAdmin()"><span class="nav-icon">🚪</span> Logout</a>
+        </nav>
+    </aside>
+    <div class="main-content">
+        <header class="top-header">
+            <div class="header-left"><button class="menu-toggle" onclick="toggleSidebar()">☰</button><h1 class="page-title">Manage Vehicles</h1></div>
+            <div class="header-right"><button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button></div>
+        </header>
+        <div class="page-content">
+            <div class="section-header">
+                <div class="search-bar" style="flex:1;margin-bottom:0;"><input type="text" id="searchInput" class="form-control" placeholder="Search vehicles..." oninput="filterVehicles()"></div>
+                <button class="btn btn-primary" onclick="openModal('addModal')" style="margin-left:var(--space-4);">+ Add Vehicle</button>
+            </div>
+            <div class="card">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Vehicle No</th><th>Owner</th><th>Model</th><th>Type</th><th>Insurance</th><th>Reg. Date</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody id="vehiclesBody"><tr><td colspan="8" class="text-center" style="padding:var(--space-8);color:var(--text-muted);">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Vehicle Modal -->
+<div class="modal-backdrop" id="addModal">
+    <div class="modal">
+        <div class="modal-header"><h3 class="modal-title">Add New Vehicle</h3><button class="modal-close" onclick="closeModal('addModal')">&times;</button></div>
+        <form id="addForm" onsubmit="return handleAdd(event)">
+            <div class="form-group"><label>Vehicle No</label><input type="text" id="addVno" class="form-control" placeholder="MH12AB1234" required style="text-transform:uppercase"></div>
+            <div class="form-group"><label>Owner Name</label><input type="text" id="addOwner" class="form-control" required></div>
+            <div class="form-group"><label>Vehicle Model</label><input type="text" id="addModel" class="form-control" placeholder="e.g. Honda City" required></div>
+            <div class="form-group"><label>Vehicle Type</label>
+                <select id="addType" class="form-control"><option value="4-Wheeler">4-Wheeler</option><option value="2-Wheeler">2-Wheeler</option><option value="Commercial">Commercial</option></select>
+            </div>
+            <div class="form-group"><label>Insurance Status</label>
+                <select id="addInsurance" class="form-control"><option value="Valid">Valid</option><option value="Expired">Expired</option></select>
+            </div>
+            <div class="form-group"><label>Registration Date</label><input type="date" id="addRegDate" class="form-control" required></div>
+            <button type="submit" class="btn btn-primary" style="width:100%">Add Vehicle</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+    let allVehicles = [];
+    (async () => {
+        await requireAdmin();
+        await loadVehicles();
+    })();
+
+    async function loadVehicles() {
+        showLoader();
+        try {
+            allVehicles = await apiGet('/api/admin/vehicles');
+        } catch(e) {
+            allVehicles = [];
+            showToast('Failed to load vehicles', 'error');
+        }
+        renderVehicles(allVehicles);
+        hideLoader();
+    }
+
+    function renderVehicles(vehicles) {
+        const tbody = document.getElementById('vehiclesBody');
+        if (!vehicles.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="color:var(--text-muted);">No vehicles found. Add one using the button above.</td></tr>'; return; }
+        tbody.innerHTML = vehicles.map(v => `<tr>
+            <td><strong>${v.vehicleNo}</strong></td><td>${v.ownerName}</td><td>${v.vehicleModel || 'N/A'}</td><td>${v.vehicleType}</td>
+            <td>${getInsuranceBadge(v.insuranceStatus)}</td><td>${formatDate(v.registrationDate)}</td>
+            <td>${v.blacklistStatus ? '<span class="badge badge-blacklisted">Blacklisted</span>' : '<span class="badge badge-valid">Clean</span>'}</td>
+            <td><button class="btn btn-sm ${v.blacklistStatus?'btn-success':'btn-danger'}" onclick="toggleBlacklist('${v.vehicleNo}',${!v.blacklistStatus})">${v.blacklistStatus?'Unblock':'Blacklist'}</button></td></tr>`).join('');
+    }
+
+    function filterVehicles() {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        renderVehicles(allVehicles.filter(v => v.vehicleNo.toLowerCase().includes(q) || v.ownerName.toLowerCase().includes(q) || (v.vehicleModel && v.vehicleModel.toLowerCase().includes(q))));
+    }
+
+    async function handleAdd(e) {
+        e.preventDefault();
+        const vehicle = {
+            vehicleNo: document.getElementById('addVno').value.toUpperCase(),
+            ownerName: document.getElementById('addOwner').value,
+            vehicleModel: document.getElementById('addModel').value,
+            vehicleType: document.getElementById('addType').value,
+            insuranceStatus: document.getElementById('addInsurance').value,
+            registrationDate: document.getElementById('addRegDate').value,
+            blacklistStatus: false
+        };
+        showLoader();
+        try {
+            await apiPost('/api/vehicle', vehicle);
+            allVehicles.push(vehicle);
+            renderVehicles(allVehicles);
+            closeModal('addModal');
+            document.getElementById('addForm').reset();
+            showToast('Vehicle added!', 'success');
+        } catch(e) { showToast(e.message, 'error'); }
+        hideLoader();
+        return false;
+    }
+
+    async function toggleBlacklist(vno, status) {
+        showLoader();
+        try {
+            await apiPut('/api/admin/vehicle/blacklist', { vehicleNo: vno, blacklistStatus: status });
+            const v = allVehicles.find(x => x.vehicleNo === vno);
+            if (v) v.blacklistStatus = status;
+            renderVehicles(allVehicles);
+            showToast(status ? 'Vehicle blacklisted' : 'Vehicle unblocked', 'success');
+        } catch(e) { showToast(e.message, 'error'); }
+        hideLoader();
+    }
+</script>
+</body>
+</html>

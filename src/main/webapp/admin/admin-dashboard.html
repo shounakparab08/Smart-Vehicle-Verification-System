@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — Vehicle Verification System</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="dashboard-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header" style="cursor:pointer;" onclick="window.location.href='../index.html'" title="Switch Portal"><span class="logo-icon">🛡️</span><h2>Admin Panel</h2></div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Overview</div>
+            <a href="admin-dashboard.html" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+            <div class="nav-section-title">Management</div>
+            <a href="manage-users.html" class="nav-item"><span class="nav-icon">👥</span> Manage Users</a>
+            <a href="manage-vehicles.html" class="nav-item"><span class="nav-icon">🚗</span> Manage Vehicles</a>
+            <a href="reports.html" class="nav-item"><span class="nav-icon">📋</span> Incident Reports</a>
+            <a href="blacklist-vehicles.html" class="nav-item"><span class="nav-icon">⛔</span> Blacklist</a>
+            <a href="analytics.html" class="nav-item"><span class="nav-icon">📈</span> Analytics</a>
+            <div class="nav-section-title">Account</div>
+            <a href="#" class="nav-item" onclick="logoutAdmin()"><span class="nav-icon">🚪</span> Logout</a>
+        </nav>
+    </aside>
+
+    <div class="main-content">
+        <header class="top-header">
+            <div class="header-left"><button class="menu-toggle" onclick="toggleSidebar()">☰</button><h1 class="page-title">Admin Dashboard</h1></div>
+            <div class="header-right"><button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button><div class="user-avatar" style="background: linear-gradient(135deg, #ef4444, #dc2626);">A</div></div>
+        </header>
+
+        <div class="page-content">
+            <div class="stats-grid">
+                <div class="stat-card animate-in"><div class="stat-info"><h3>Total Users</h3><div class="stat-value" id="totalUsers">0</div></div><div class="stat-icon purple">👥</div></div>
+                <div class="stat-card animate-in" style="animation-delay:.1s"><div class="stat-info"><h3>Total Vehicles</h3><div class="stat-value" id="totalVehicles">0</div></div><div class="stat-icon cyan">🚗</div></div>
+                <div class="stat-card animate-in" style="animation-delay:.2s"><div class="stat-info"><h3>Total Reports</h3><div class="stat-value" id="totalReports">0</div></div><div class="stat-icon blue">📋</div></div>
+                <div class="stat-card animate-in" style="animation-delay:.3s"><div class="stat-info"><h3>Blacklisted</h3><div class="stat-value" id="blacklisted">0</div></div><div class="stat-icon red">⛔</div></div>
+                <div class="stat-card animate-in" style="animation-delay:.4s"><div class="stat-info"><h3>Pending Reports</h3><div class="stat-value" id="pending">0</div></div><div class="stat-icon yellow">⏳</div></div>
+                <div class="stat-card animate-in" style="animation-delay:.5s"><div class="stat-info"><h3>Resolved</h3><div class="stat-value" id="resolved">0</div></div><div class="stat-icon green">✅</div></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">Recent Reports</h3><a href="reports.html" class="btn btn-secondary btn-sm">View All</a></div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>ID</th><th>Vehicle</th><th>Reported By</th><th>Reason</th><th>Status</th><th>Date</th></tr></thead>
+                        <tbody id="recentBody"><tr><td colspan="6" class="text-center" style="padding:var(--space-8);color:var(--text-muted);">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+    (async () => {
+        await requireAdmin();
+        try {
+            const stats = await apiGet('/api/admin/stats');
+            document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
+            document.getElementById('totalVehicles').textContent = stats.totalVehicles || 0;
+            document.getElementById('totalReports').textContent = stats.totalReports || 0;
+            document.getElementById('blacklisted').textContent = stats.blacklistedVehicles || 0;
+            document.getElementById('pending').textContent = stats.pendingReports || 0;
+            document.getElementById('resolved').textContent = stats.resolvedReports || 0;
+        } catch(e) {}
+        try {
+            const reports = await apiGet('/api/report/all');
+            const tbody = document.getElementById('recentBody');
+            if (reports.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="color:var(--text-muted);">No reports yet.</td></tr>'; return; }
+            tbody.innerHTML = reports.slice(0,5).map(r => `<tr>
+                <td style="font-family:monospace;font-size:var(--font-xs);">${r.reportId.substring(0,8)}</td>
+                <td><strong>${r.vehicleNo}</strong></td><td>${r.reportedBy.substring(0,8)}...</td>
+                <td>${r.reason}</td><td>${getStatusBadge(r.status)}</td><td>${formatDate(r.createdAt)}</td></tr>`).join('');
+        } catch(e) {}
+    })();
+</script>
+</body>
+</html>

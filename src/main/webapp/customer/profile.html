@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile — Vehicle Verification System</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="dashboard-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header" style="cursor:pointer;" onclick="window.location.href='../index.html'" title="Switch Portal"><span class="logo-icon">🚗</span><h2>VehicleVerify</h2></div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main</div>
+            <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="my-vehicles.html" class="nav-item"><span class="nav-icon">🚘</span> My Vehicles</a>
+            <a href="search-vehicle.html" class="nav-item"><span class="nav-icon">🔍</span> Search Vehicle</a>
+            <a href="report-incident.html" class="nav-item"><span class="nav-icon">🚨</span> Report Incident</a>
+            <a href="complaint-history.html" class="nav-item"><span class="nav-icon">📋</span> Complaint History</a>
+            <div class="nav-section-title">Account</div>
+            <a href="profile.html" class="nav-item active"><span class="nav-icon">👤</span> Profile</a>
+            <a href="#" class="nav-item" onclick="logoutUser()"><span class="nav-icon">🚪</span> Logout</a>
+        </nav>
+    </aside>
+
+    <div class="main-content">
+        <header class="top-header">
+            <div class="header-left"><button class="menu-toggle" onclick="toggleSidebar()">☰</button><h1 class="page-title">Profile</h1></div>
+            <div class="header-right"><button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button></div>
+        </header>
+
+        <div class="page-content">
+            <div class="profile-card animate-in">
+                <div class="profile-avatar-large" id="profileAvatar">?</div>
+                <h2 style="text-align:center; font-size: var(--font-2xl); font-weight: 800; margin-bottom: var(--space-1);" id="profileName">Loading...</h2>
+                <p style="text-align:center; color: var(--text-muted); margin-bottom: var(--space-8);" id="profileEmail">...</p>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-8);">
+                    <div class="vehicle-detail-item"><div class="label">Role</div><div class="value" id="profileRole">—</div></div>
+                    <div class="vehicle-detail-item"><div class="label">Member Since</div><div class="value" id="profileDate">—</div></div>
+                    <div class="vehicle-detail-item" style="grid-column: 1/-1;"><div class="label">Email Verified</div><div class="value" id="emailVerified">—</div></div>
+                </div>
+
+                <h3 style="font-size: var(--font-lg); font-weight: 700; margin-bottom: var(--space-4);">Update Name</h3>
+                <form id="updateForm" onsubmit="return handleUpdate(event)">
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+    (async () => {
+        const fbUser = await requireAuth();
+        try {
+            const profile = await apiGet('/api/user/profile');
+            document.getElementById('profileName').textContent = profile.name;
+            document.getElementById('profileEmail').textContent = profile.email;
+            document.getElementById('profileRole').textContent = profile.role === 'admin' ? '🛡️ Admin' : '👤 Customer';
+            document.getElementById('profileDate').textContent = formatDate(profile.createdAt);
+            document.getElementById('profileAvatar').textContent = getInitials(profile.name);
+            document.getElementById('name').value = profile.name;
+            document.getElementById('emailVerified').innerHTML = fbUser.emailVerified
+                ? '<span class="badge badge-valid">✓ Verified</span>'
+                : '<span class="badge badge-expired">✗ Not Verified</span> <button class="btn btn-sm btn-secondary" onclick="resendVerification()" style="margin-left:8px;">Resend</button>';
+        } catch (e) {
+            showToast('Failed to load profile', 'error');
+        }
+    })();
+
+    async function handleUpdate(e) {
+        e.preventDefault();
+        const name = document.getElementById('name').value.trim();
+        if (!name) { showToast('Name cannot be empty', 'error'); return false; }
+        showLoader();
+        try {
+            await apiPut('/api/user/profile', { name });
+            showToast('Profile updated!', 'success');
+            document.getElementById('profileName').textContent = name;
+            document.getElementById('profileAvatar').textContent = getInitials(name);
+        } catch (e) { showToast(e.message, 'error'); }
+        hideLoader();
+        return false;
+    }
+
+    async function resendVerification() {
+        try { await auth.currentUser.sendEmailVerification(); showToast('Verification email sent!', 'success'); }
+        catch (e) { showToast('Failed to send verification email', 'error'); }
+    }
+</script>
+</body>
+</html>

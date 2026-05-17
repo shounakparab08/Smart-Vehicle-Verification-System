@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blacklisted Vehicles — Admin</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="dashboard-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header" style="cursor:pointer;" onclick="window.location.href='../index.html'" title="Switch Portal"><span class="logo-icon">🛡️</span><h2>Admin Panel</h2></div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Overview</div>
+            <a href="admin-dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+            <div class="nav-section-title">Management</div>
+            <a href="manage-users.html" class="nav-item"><span class="nav-icon">👥</span> Manage Users</a>
+            <a href="manage-vehicles.html" class="nav-item"><span class="nav-icon">🚗</span> Manage Vehicles</a>
+            <a href="reports.html" class="nav-item"><span class="nav-icon">📋</span> Incident Reports</a>
+            <a href="blacklist-vehicles.html" class="nav-item active"><span class="nav-icon">⛔</span> Blacklist</a>
+            <a href="analytics.html" class="nav-item"><span class="nav-icon">📈</span> Analytics</a>
+            <div class="nav-section-title">Account</div>
+            <a href="#" class="nav-item" onclick="logoutAdmin()"><span class="nav-icon">🚪</span> Logout</a>
+        </nav>
+    </aside>
+    <div class="main-content">
+        <header class="top-header">
+            <div class="header-left"><button class="menu-toggle" onclick="toggleSidebar()">☰</button><h1 class="page-title">Blacklisted Vehicles</h1></div>
+            <div class="header-right"><button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button></div>
+        </header>
+        <div class="page-content">
+            <div class="search-bar"><input type="text" id="searchInput" class="form-control" placeholder="Search blacklisted vehicles..." oninput="filterBL()"></div>
+            <div class="card">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Vehicle No</th><th>Owner</th><th>Type</th><th>Insurance</th><th>Reg. Date</th><th>Action</th></tr></thead>
+                        <tbody id="blBody"><tr><td colspan="6" class="text-center" style="padding:var(--space-8);color:var(--text-muted);">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+    let blacklisted = [];
+    (async () => {
+        await requireAdmin();
+        showLoader();
+        try { blacklisted = await apiGet('/api/admin/blacklisted'); renderBL(blacklisted); } catch(e) {}
+        hideLoader();
+    })();
+
+    function renderBL(list) {
+        const tbody = document.getElementById('blBody');
+        if (!list.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">✅</div><h3 class="empty-state-title">No Blacklisted Vehicles</h3><p class="empty-state-desc">All clear! No vehicles are currently blacklisted.</p></div></td></tr>'; return; }
+        tbody.innerHTML = list.map(v => `<tr>
+            <td><strong>${v.vehicleNo}</strong></td><td>${v.ownerName}</td><td>${v.vehicleType}</td>
+            <td>${getInsuranceBadge(v.insuranceStatus)}</td><td>${formatDate(v.registrationDate)}</td>
+            <td><button class="btn btn-success btn-sm" onclick="unblock('${v.vehicleNo}')">✓ Remove from Blacklist</button></td></tr>`).join('');
+    }
+
+    function filterBL() {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        renderBL(blacklisted.filter(v => v.vehicleNo.toLowerCase().includes(q) || v.ownerName.toLowerCase().includes(q)));
+    }
+
+    async function unblock(vno) {
+        showLoader();
+        try {
+            await apiPut('/api/admin/vehicle/blacklist', { vehicleNo: vno, blacklistStatus: false });
+            blacklisted = blacklisted.filter(v => v.vehicleNo !== vno);
+            renderBL(blacklisted);
+            showToast('Vehicle removed from blacklist', 'success');
+        } catch(e) { showToast(e.message, 'error'); }
+        hideLoader();
+    }
+</script>
+</body>
+</html>

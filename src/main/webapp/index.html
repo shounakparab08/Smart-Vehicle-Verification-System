@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Vehicle Verification System Portal Selection">
+    <title>Welcome — Vehicle Verification System</title>
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .portal-selection {
+            width: 100%;
+            padding: var(--space-6);
+        }
+        
+        .portal-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .portal-header {
+            margin-bottom: var(--space-10);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .portal-header h1 {
+            font-size: var(--font-4xl);
+            font-weight: 800;
+            margin-bottom: var(--space-3);
+            background: linear-gradient(135deg, var(--primary-400), var(--accent-400));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .portal-header p {
+            font-size: var(--font-lg);
+            color: var(--text-secondary);
+        }
+
+        .portal-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: var(--space-8);
+        }
+
+        .portal-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-10) var(--space-8);
+            transition: all var(--transition-base);
+            text-decoration: none;
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: scaleIn 0.6s ease-out both;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: var(--primary-500);
+            transform: scaleX(0);
+            transition: transform var(--transition-base);
+            transform-origin: left;
+        }
+
+        .portal-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary-400);
+        }
+        
+        .portal-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .portal-card.admin-card::before {
+            background: var(--success-500);
+        }
+        
+        .portal-card.admin-card:hover {
+            border-color: var(--success-400);
+        }
+
+        .portal-card.test-card::before {
+            background: #a855f7;
+        }
+        
+        .portal-card.test-card:hover {
+            border-color: #c084fc;
+        }
+
+        .portal-icon {
+            font-size: 3.5rem;
+            margin-bottom: var(--space-6);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+            height: 100px;
+            border-radius: var(--radius-full);
+            background: var(--bg-tertiary);
+            transition: transform var(--transition-base);
+        }
+
+        .portal-card:hover .portal-icon {
+            transform: scale(1.1);
+        }
+
+        .portal-card h2 {
+            font-size: var(--font-2xl);
+            font-weight: 700;
+            margin-bottom: var(--space-3);
+        }
+
+        .portal-card p {
+            color: var(--text-secondary);
+            font-size: var(--font-base);
+            line-height: 1.5;
+            margin-bottom: var(--space-8);
+            flex-grow: 1;
+        }
+
+        .btn-portal {
+            margin-top: auto;
+            width: 100%;
+            padding: var(--space-3) var(--space-6);
+            font-size: var(--font-lg);
+            font-weight: 600;
+            border-radius: var(--radius-md);
+            text-align: center;
+            transition: all var(--transition-fast);
+        }
+        
+        .btn-user {
+            background-color: var(--primary-600);
+            color: white;
+            border: none;
+        }
+        
+        .btn-user:hover {
+            background-color: var(--primary-500);
+            box-shadow: var(--shadow-glow);
+        }
+        
+        .btn-admin {
+            background-color: var(--success-600);
+            color: white;
+            border: none;
+        }
+        
+        .btn-admin:hover {
+            background-color: var(--success-500);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-test {
+            background-color: #9333ea;
+            color: white;
+            border: none;
+        }
+        
+        .btn-test:hover {
+            background-color: #a855f7;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+        }
+
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="portal-selection">
+        <div class="portal-container">
+            <div class="portal-header">
+                <h1>Vehicle Verify</h1>
+                <p>Smart Vehicle Verification & Incident Reporting System</p>
+            </div>
+            
+            <div class="portal-cards">
+                <a href="customer/login.html" class="portal-card user-card" style="animation-delay: 0.1s">
+                    <div class="portal-icon">👤</div>
+                    <h2>User Portal</h2>
+                    <p>Report incidents, track verification status, and manage your registered vehicles.</p>
+                    <div class="btn-portal btn-user">Login as User</div>
+                </a>
+
+                <a href="admin/admin-login.html" class="portal-card admin-card" style="animation-delay: 0.2s">
+                    <div class="portal-icon">🛡️</div>
+                    <h2>Admin Portal</h2>
+                    <p>Manage users, verify reports, process applications and control system settings.</p>
+                    <div class="btn-portal btn-admin">Login as Admin</div>
+                </a>
+
+                <a href="customer/login.html" class="portal-card test-card" style="animation-delay: 0.3s">
+                    <div class="portal-icon">🧪</div>
+                    <h2>Test User</h2>
+                    <p>Experience the user features seamlessly with a pre-configured test account.</p>
+                    <div class="btn-portal btn-test">Login as Test User</div>
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

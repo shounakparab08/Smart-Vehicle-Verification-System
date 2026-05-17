@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Vehicle — Vehicle Verification System</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="dashboard-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header" style="cursor:pointer;" onclick="window.location.href='../index.html'" title="Switch Portal"><span class="logo-icon">🚗</span><h2>VehicleVerify</h2></div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main</div>
+            <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="my-vehicles.html" class="nav-item"><span class="nav-icon">🚘</span> My Vehicles</a>
+            <a href="search-vehicle.html" class="nav-item active"><span class="nav-icon">🔍</span> Search Vehicle</a>
+            <a href="report-incident.html" class="nav-item"><span class="nav-icon">🚨</span> Report Incident</a>
+            <a href="complaint-history.html" class="nav-item"><span class="nav-icon">📋</span> Complaint History</a>
+            <div class="nav-section-title">Account</div>
+            <a href="profile.html" class="nav-item"><span class="nav-icon">👤</span> Profile</a>
+            <a href="#" class="nav-item" onclick="logoutUser()"><span class="nav-icon">🚪</span> Logout</a>
+        </nav>
+    </aside>
+
+    <div class="main-content">
+        <header class="top-header">
+            <div class="header-left"><button class="menu-toggle" onclick="toggleSidebar()">☰</button><h1 class="page-title">Search Vehicle</h1></div>
+            <div class="header-right">
+                <div class="notification-wrapper" style="position:relative; margin-right: var(--space-4);">
+                    <button class="icon-btn" onclick="toggleNotifications()" id="notifBtn">
+                        <span style="font-size: 1.5rem;">🔔</span>
+                        <span class="notif-badge" id="notifBadge" style="display:none; position:absolute; top:-5px; right:-5px; background:var(--danger-500); color:white; font-size:0.7rem; padding:2px 6px; border-radius:10px; border:2px solid var(--surface);">0</span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown" style="display:none; position:absolute; top:50px; right:0; width:320px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-xl); z-index:1000; overflow:hidden;">
+                        <div style="padding:var(--space-4); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                            <h4 style="margin:0;">Notifications</h4>
+                            <button onclick="markAllRead()" style="background:none; border:none; color:var(--primary-400); font-size:var(--font-xs); cursor:pointer;">Mark all read</button>
+                        </div>
+                        <div id="notifList" style="max-height:360px; overflow-y:auto;">
+                            <div style="padding:var(--space-8); text-align:center; color:var(--text-muted);">No new messages</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+            </div>
+        </header>
+
+        <div class="page-content">
+            <!-- Search Form -->
+            <div class="card" style="max-width: 600px; margin: 0 auto var(--space-8);">
+                <h3 class="card-title" style="margin-bottom: var(--space-4);">🔍 Enter Vehicle Number</h3>
+                <form id="searchForm" onsubmit="return handleSearch(event)">
+                    <div class="search-bar">
+                        <input type="text" id="vehicleNo" class="form-control" placeholder="e.g. MH12AB1234" required style="text-transform: uppercase; letter-spacing: 2px; font-weight: 700;">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Result Area -->
+            <div id="resultArea" class="hidden">
+                <div class="vehicle-result animate-in">
+                    <div class="vehicle-header">
+                        <div class="vehicle-plate" id="plateNo">MH12AB1234</div>
+                        <div id="blacklistBadge"></div>
+                    </div>
+                    <div class="vehicle-details">
+                        <div class="vehicle-detail-item"><div class="label">Owner Name</div><div class="value" id="ownerName">—</div></div>
+                        <div class="vehicle-detail-item"><div class="label">Vehicle Model</div><div class="value" id="vehicleModel">—</div></div>
+                        <div class="vehicle-detail-item"><div class="label">Vehicle Type</div><div class="value" id="vehicleType">—</div></div>
+                        <div class="vehicle-detail-item"><div class="label">Insurance</div><div class="value" id="insurance">—</div></div>
+                        <div class="vehicle-detail-item"><div class="label">Registration Date</div><div class="value" id="regDate">—</div></div>
+                    </div>
+                    <div style="margin-top: var(--space-6); text-align: center;">
+                        <a id="reportBtn" class="btn btn-danger">🚨 Report This Vehicle</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Not Found -->
+            <div id="notFoundArea" class="hidden">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔎</div>
+                    <h3 class="empty-state-title">Vehicle Not Found</h3>
+                    <p class="empty-state-desc">No records found for this vehicle number. Please check and try again.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+    (async () => {
+        await requireAuth();
+        
+        try {
+            const profile = await apiGet('/api/user/profile');
+            if (profile.isFrozen) showFrozenModal(profile.fineAmount);
+            loadNotifications();
+        } catch(e) {}
+    })();
+
+    async function handleSearch(e) {
+        e.preventDefault();
+        const vno = document.getElementById('vehicleNo').value.trim().toUpperCase().replace(/\s/g, '');
+        document.getElementById('resultArea').classList.add('hidden');
+        document.getElementById('notFoundArea').classList.add('hidden');
+
+        if (!vno) { showToast('Enter a vehicle number', 'error'); return false; }
+        showLoader();
+
+        try {
+            const v = await apiGet('/api/vehicle/search?vehicleNo=' + encodeURIComponent(vno));
+            document.getElementById('plateNo').textContent = v.vehicleNo;
+            document.getElementById('ownerName').textContent = v.ownerName;
+            document.getElementById('vehicleModel').textContent = v.vehicleModel || 'N/A';
+            document.getElementById('vehicleType').textContent = v.vehicleType;
+            document.getElementById('insurance').innerHTML = getInsuranceBadge(v.insuranceStatus);
+            document.getElementById('regDate').textContent = formatDate(v.registrationDate);
+            document.getElementById('blacklistBadge').innerHTML = v.blacklistStatus ? '<span class="badge badge-blacklisted">⚠ BLACKLISTED</span>' : '';
+            document.getElementById('reportBtn').href = 'report-incident.html?vehicleNo=' + v.vehicleNo;
+            document.getElementById('resultArea').classList.remove('hidden');
+        } catch (error) {
+            document.getElementById('notFoundArea').classList.remove('hidden');
+        }
+        hideLoader();
+        return false;
+    }
+</script>
+</body>
+</html>

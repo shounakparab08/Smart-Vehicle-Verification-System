@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complaint History — Vehicle Verification System</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="dashboard-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header" style="cursor:pointer;" onclick="window.location.href='../index.html'" title="Switch Portal"><span class="logo-icon">🚗</span><h2>VehicleVerify</h2></div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main</div>
+            <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="my-vehicles.html" class="nav-item"><span class="nav-icon">🚘</span> My Vehicles</a>
+            <a href="search-vehicle.html" class="nav-item"><span class="nav-icon">🔍</span> Search Vehicle</a>
+            <a href="report-incident.html" class="nav-item"><span class="nav-icon">🚨</span> Report Incident</a>
+            <a href="complaint-history.html" class="nav-item active"><span class="nav-icon">📋</span> Complaint History</a>
+            <div class="nav-section-title">Account</div>
+            <a href="profile.html" class="nav-item"><span class="nav-icon">👤</span> Profile</a>
+            <a href="#" class="nav-item" onclick="logoutUser()"><span class="nav-icon">🚪</span> Logout</a>
+        </nav>
+    </aside>
+
+    <div class="main-content">
+        <header class="top-header">
+            <div class="header-left"><button class="menu-toggle" onclick="toggleSidebar()">☰</button><h1 class="page-title">Complaint History</h1></div>
+            <div class="header-right">
+                <div class="notification-wrapper" style="position:relative; margin-right: var(--space-4);">
+                    <button class="icon-btn" onclick="toggleNotifications()" id="notifBtn">
+                        <span style="font-size: 1.5rem;">🔔</span>
+                        <span class="notif-badge" id="notifBadge" style="display:none; position:absolute; top:-5px; right:-5px; background:var(--danger-500); color:white; font-size:0.7rem; padding:2px 6px; border-radius:10px; border:2px solid var(--surface);">0</span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown" style="display:none; position:absolute; top:50px; right:0; width:320px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-xl); z-index:1000; overflow:hidden;">
+                        <div style="padding:var(--space-4); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                            <h4 style="margin:0;">Notifications</h4>
+                            <button onclick="markAllRead()" style="background:none; border:none; color:var(--primary-400); font-size:var(--font-xs); cursor:pointer;">Mark all read</button>
+                        </div>
+                        <div id="notifList" style="max-height:360px; overflow-y:auto;">
+                            <div style="padding:var(--space-8); text-align:center; color:var(--text-muted);">No new messages</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+            </div>
+        </header>
+
+        <div class="page-content">
+            <!-- Filter -->
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="filterReports('all', this)">All</button>
+                <button class="filter-btn" onclick="filterReports('Pending', this)">Pending</button>
+                <button class="filter-btn" onclick="filterReports('In Progress', this)">In Progress</button>
+                <button class="filter-btn" onclick="filterReports('Resolved', this)">Resolved</button>
+                <button class="filter-btn" onclick="filterReports('Rejected', this)">Rejected</button>
+            </div>
+
+            <!-- Table -->
+            <div class="card">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Report ID</th><th>Vehicle No</th><th>Reason</th><th>Description</th><th>Status</th><th>Date</th></tr></thead>
+                        <tbody id="historyBody"><tr><td colspan="6" class="text-center" style="padding:var(--space-8);color:var(--text-muted);">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-backdrop" id="detailModal">
+    <div class="modal">
+        <div class="modal-header"><h3 class="modal-title">Report Details</h3><button class="modal-close" onclick="closeModal('detailModal')">&times;</button></div>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+    let allReports = [];
+
+    (async () => {
+        await requireAuth();
+        
+        try {
+            const profile = await apiGet('/api/user/profile');
+            if (profile.isFrozen) showFrozenModal(profile.fineAmount);
+            loadNotifications();
+        } catch(e) {}
+        showLoader();
+        try {
+            allReports = await apiGet('/api/report/history');
+            renderReports(allReports);
+        } catch (e) {
+            document.getElementById('historyBody').innerHTML = '<tr><td colspan="6" class="text-center" style="color:var(--text-muted);">Could not load complaints.</td></tr>';
+        }
+        hideLoader();
+    })();
+
+    function renderReports(reports) {
+        const tbody = document.getElementById('historyBody');
+        if (reports.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">📋</div><h3 class="empty-state-title">No Reports</h3><p class="empty-state-desc">You haven\'t filed any reports yet.</p></div></td></tr>';
+            return;
+        }
+        tbody.innerHTML = reports.map(r => `
+            <tr style="cursor:pointer;" onclick='showDetail(${JSON.stringify(r)})'>
+                <td style="font-family:monospace;font-size:var(--font-xs);">${r.reportId.substring(0,8)}...</td>
+                <td><strong>${r.vehicleNo}</strong></td>
+                <td>${r.reason}</td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.description}</td>
+                <td>${getStatusBadge(r.status)}</td>
+                <td>${formatDate(r.createdAt)}</td>
+            </tr>`).join('');
+    }
+
+    function filterReports(status, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filtered = status === 'all' ? allReports : allReports.filter(r => r.status === status);
+        renderReports(filtered);
+    }
+
+    function showDetail(r) {
+        document.getElementById('modalBody').innerHTML = `
+            <div style="display:grid;gap:var(--space-4);">
+                <div><strong>Report ID:</strong> <code>${r.reportId}</code></div>
+                <div><strong>Vehicle No:</strong> ${r.vehicleNo}</div>
+                <div><strong>Reason:</strong> ${r.reason}</div>
+                <div><strong>Status:</strong> ${getStatusBadge(r.status)}</div>
+                <div><strong>Date:</strong> ${formatDate(r.createdAt)}</div>
+                <div><strong>Description:</strong><p style="color:var(--text-secondary);margin-top:var(--space-2);">${r.description}</p></div>
+            </div>`;
+        openModal('detailModal');
+    }
+</script>
+</body>
+</html>

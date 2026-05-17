@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal — Vehicle Verification System</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <span class="auth-logo-icon" onclick="window.location.href='../index.html'">🛡️</span>
+                <h1>Admin Portal</h1>
+                <p>Advanced Management & Verification Console</p>
+            </div>
+
+            <div id="authError" class="auth-error"></div>
+
+            <form id="loginForm" onsubmit="return handleAdminLogin(event)" autocomplete="off">
+                <!-- Hidden inputs to trick the browser's autofill -->
+                <input type="text" name="admin_prevent_autofill" style="display:none;" />
+                <input type="password" name="admin_password_fake" style="display:none;" />
+                <div class="form-group">
+                    <label>Admin Credentials</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="email" class="form-control" placeholder="admin@system.com" required autocomplete="email">
+                        <span class="input-icon">📧</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Security Key</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                        <span class="input-icon">🔒</span>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="loginBtn">Sign In</button>
+            </form>
+
+            <div class="auth-footer" style="display: flex; flex-direction: column; gap: 12px;">
+                <div>New Admin? <a href="admin-register.html">Register Profile</a></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/ui.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                try {
+                    const profile = await apiGet('/api/user/profile');
+                    if (profile && profile.role === 'admin') {
+                        window.location.href = 'admin-dashboard.html';
+                    }
+                } catch(e) {}
+            }
+        });
+
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errEl = document.getElementById('authError');
+            errEl.classList.remove('visible');
+
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+
+            try {
+                await loginUser(email, password);
+                const profile = await apiGet('/api/user/profile');
+                if (!profile || profile.role !== 'admin') {
+                    errEl.textContent = 'Access restricted to administrative accounts.';
+                    errEl.classList.add('visible');
+                    await auth.signOut();
+                    btn.disabled = false;
+                    btn.textContent = 'Authorize & Access';
+                    return false;
+                }
+                window.location.href = 'admin-dashboard.html';
+            } catch (error) {
+                errEl.textContent = getAuthErrorMessage(error);
+                errEl.classList.add('visible');
+                btn.disabled = false;
+                btn.textContent = 'Authorize & Access';
+            }
+            return false;
+        }
+        async function switchPortal(url) {
+            await auth.signOut();
+            window.location.href = url;
+        }
+
+        // Aggressively clear fields on load to prevent browser autofill
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const e = document.getElementById('email');
+                const p = document.getElementById('password');
+                if(e) e.value = '';
+                if(p) p.value = '';
+            }, 50);
+        });
+    </script>
+</body>
+</html>

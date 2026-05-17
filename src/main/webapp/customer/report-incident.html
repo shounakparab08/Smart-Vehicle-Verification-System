@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Incident — Vehicle Verification System</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="dashboard-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header" style="cursor:pointer;" onclick="window.location.href='../index.html'" title="Switch Portal"><span class="logo-icon">🚗</span><h2>VehicleVerify</h2></div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main</div>
+            <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="my-vehicles.html" class="nav-item"><span class="nav-icon">🚘</span> My Vehicles</a>
+            <a href="search-vehicle.html" class="nav-item"><span class="nav-icon">🔍</span> Search Vehicle</a>
+            <a href="report-incident.html" class="nav-item active"><span class="nav-icon">🚨</span> Report Incident</a>
+            <a href="complaint-history.html" class="nav-item"><span class="nav-icon">📋</span> Complaint History</a>
+            <div class="nav-section-title">Account</div>
+            <a href="profile.html" class="nav-item"><span class="nav-icon">👤</span> Profile</a>
+            <a href="#" class="nav-item" onclick="logoutUser()"><span class="nav-icon">🚪</span> Logout</a>
+        </nav>
+    </aside>
+
+    <div class="main-content">
+        <header class="top-header">
+            <div class="header-left"><button class="menu-toggle" onclick="toggleSidebar()">☰</button><h1 class="page-title">Report Incident</h1></div>
+            <div class="header-right">
+                <div class="notification-wrapper" style="position:relative; margin-right: var(--space-4);">
+                    <button class="icon-btn" onclick="toggleNotifications()" id="notifBtn">
+                        <span style="font-size: 1.5rem;">🔔</span>
+                        <span class="notif-badge" id="notifBadge" style="display:none; position:absolute; top:-5px; right:-5px; background:var(--danger-500); color:white; font-size:0.7rem; padding:2px 6px; border-radius:10px; border:2px solid var(--surface);">0</span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown" style="display:none; position:absolute; top:50px; right:0; width:320px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-xl); z-index:1000; overflow:hidden;">
+                        <div style="padding:var(--space-4); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                            <h4 style="margin:0;">Notifications</h4>
+                            <button onclick="markAllRead()" style="background:none; border:none; color:var(--primary-400); font-size:var(--font-xs); cursor:pointer;">Mark all read</button>
+                        </div>
+                        <div id="notifList" style="max-height:360px; overflow-y:auto;">
+                            <div style="padding:var(--space-8); text-align:center; color:var(--text-muted);">No new messages</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+            </div>
+        </header>
+
+        <div class="page-content">
+            <div class="card" style="max-width: 650px; margin: 0 auto;">
+                <h3 class="card-title" style="margin-bottom: var(--space-2);">🚨 Report Suspicious Vehicle / Activity</h3>
+                <p style="color: var(--text-muted); font-size: var(--font-sm); margin-bottom: var(--space-6);">Fill in the details below. Your report will be reviewed by our admin team.</p>
+
+                <form id="reportForm" onsubmit="return handleReport(event)">
+                    <div class="form-group">
+                        <label for="vehicleNo">Vehicle Number</label>
+                        <input type="text" id="vehicleNo" class="form-control" placeholder="e.g. MH12AB1234" required style="text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                    </div>
+                    <div class="form-group">
+                        <label for="reason">Reason</label>
+                        <select id="reason" class="form-control" required>
+                            <option value="">Select a reason...</option>
+                            <option value="Suspicious Activity">Suspicious Activity</option>
+                            <option value="Rash Driving">Rash Driving</option>
+                            <option value="Hit and Run">Hit and Run</option>
+                            <option value="Stolen Vehicle">Stolen Vehicle</option>
+                            <option value="Accident">Accident</option>
+                            <option value="Illegal Modification">Illegal Modification</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Detailed Description</label>
+                        <textarea id="description" class="form-control" placeholder="Describe the incident in detail..." rows="5" required maxlength="1000" oninput="updateCharCount()"></textarea>
+                        <div style="text-align: right; font-size: var(--font-xs); color: var(--text-muted);"><span id="charCount">0</span>/1000</div>
+                    </div>
+                    <button type="submit" class="btn btn-danger btn-lg" style="width: 100%;">🚨 Submit Report</button>
+                </form>
+
+                <!-- Success State -->
+                <div id="successState" class="hidden" style="text-align: center; padding: var(--space-8);">
+                    <div style="font-size: 4rem; margin-bottom: var(--space-4);">✅</div>
+                    <h3 style="font-size: var(--font-xl); font-weight: 700; margin-bottom: var(--space-2);">Report Submitted!</h3>
+                    <p style="color: var(--text-muted); margin-bottom: var(--space-2);">Report ID: <code id="reportIdDisplay"></code></p>
+                    <p style="color: var(--text-muted); margin-bottom: var(--space-6);">Our team will review your report shortly.</p>
+                    <a href="complaint-history.html" class="btn btn-primary">View Complaint History</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+    (async () => {
+        await requireAuth();
+        
+        try {
+            const profile = await apiGet('/api/user/profile');
+            if (profile.isFrozen) showFrozenModal(profile.fineAmount);
+            loadNotifications();
+        } catch(e) {}
+    })();
+
+    // Pre-fill vehicle number from URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('vehicleNo')) {
+        document.getElementById('vehicleNo').value = params.get('vehicleNo');
+    }
+
+    function updateCharCount() {
+        document.getElementById('charCount').textContent = document.getElementById('description').value.length;
+    }
+
+    async function handleReport(e) {
+        e.preventDefault();
+        const vehicleNo = document.getElementById('vehicleNo').value.trim().toUpperCase();
+        const reason = document.getElementById('reason').value;
+        const description = document.getElementById('description').value.trim();
+
+        if (!vehicleNo || !reason || !description) {
+            showToast('Please fill in all fields', 'error');
+            return false;
+        }
+
+        showLoader();
+        try {
+            const result = await apiPost('/api/report', { vehicleNo, reason, description });
+            document.getElementById('reportForm').classList.add('hidden');
+            document.getElementById('successState').classList.remove('hidden');
+            document.getElementById('reportIdDisplay').textContent = result.reportId;
+            showToast('Report submitted successfully!', 'success');
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+        hideLoader();
+        return false;
+    }
+</script>
+</body>
+</html>

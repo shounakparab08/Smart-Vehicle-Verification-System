@@ -1,0 +1,23 @@
+# Maven build output
+target/
+
+# Embedded Tomcat temporary directory
+tomcat.8080/
+
+# Compiled Java class files
+*.class
+
+# Log files
+*.log
+logs/
+
+# IDE files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+
+# Local configuration overrides
+*.properties.local
